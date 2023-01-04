@@ -23,6 +23,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener {
 
@@ -76,11 +77,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 // where we will add our locations latitude and longitude.
                 LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
 
+                mMap.clear();
+
                 // on below line we are adding marker to that position.
                 mMap.addMarker(new MarkerOptions().position(latLng).title(location));
 
                 // below line is to animate camera to that position.
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10));
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
                 return false;
             }
 
@@ -106,8 +109,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Add a marker in timisoara and move the camera
         LatLng timisoara = new LatLng(45.760696, 21.226788);
-//        mMap.addMarker(new MarkerOptions().position(timisoara).title("Marker in timisoara"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(timisoara));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(timisoara, 15));
 
         if (mapView != null &&
                 mapView.findViewById(Integer.parseInt("1")) != null) {
