@@ -23,4 +23,15 @@
         android:elevation="5dp"
         app:iconifiedByDefault="false"
         app:queryHint="Search Here" />
+
+    <!--get direction button-->
+    <Button
+        android:id="@+id/btnGetDirections"
+        android:text="Get Directions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|left"
+        android:layout_marginBottom="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="80dp"/>
 </FrameLayout>
