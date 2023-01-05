@@ -1,12 +1,22 @@
 package com.example.yourway;
 
+import static android.content.ContentValues.TAG;
+
+import static com.example.yourway.BuildConfig.MAPS_API_KEY;
+
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
+import android.location.Location;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SearchView;
@@ -14,33 +24,54 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.maps.DirectionsApi;
+import com.google.maps.DirectionsApiRequest;
+import com.google.maps.GeoApiContext;
+import com.google.maps.model.DirectionsLeg;
+import com.google.maps.model.DirectionsResult;
+import com.google.maps.model.DirectionsRoute;
+import com.google.maps.model.DirectionsStep;
+import com.google.maps.model.EncodedPolyline;
+import com.google.maps.model.TravelMode;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener {
 
     private GoogleMap mMap;
+    private String origin;
+    private String destination;
     View mapView;
 
     // creating a variable
     // for search view.
     SearchView searchView;
 
+    @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
+        FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         // initializing our search view.
         searchView = findViewById(R.id.idSearchView);
+
+        Button btnGetDirections = (Button) findViewById(R.id.btnGetDirections);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -76,6 +107,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 // on below line we are creating a variable for our location
                 // where we will add our locations latitude and longitude.
                 LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
+                destination = String.format("%f,%f", address.getLatitude(), address.getLongitude());
 
                 mMap.clear();
 
@@ -90,6 +122,79 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public boolean onQueryTextChange(String newText) {
                 return false;
+            }
+        });
+
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, location -> {
+                    // Got last known location. In some rare situations this can be null.
+                    if (location != null) {
+                        origin = Location.convert(location.getLatitude(), Location.FORMAT_DEGREES) + "," + Location.convert(location.getLongitude(), Location.FORMAT_DEGREES);
+                    }
+                });
+
+        //get directions functionality
+        btnGetDirections.setOnClickListener(v -> {
+            //Define list to get all latlng for the route
+            List<LatLng> path = new ArrayList();
+
+            //Execute Directions API request
+            GeoApiContext context = new GeoApiContext.Builder()
+                    .apiKey(MAPS_API_KEY)
+                    .build();
+            DirectionsApiRequest req = DirectionsApi.newRequest(context);
+            req.origin(origin);
+            req.destination(destination);
+            //Find direction using only public transportation
+            req.mode(TravelMode.TRANSIT);
+            try {
+                DirectionsResult res = req.await();
+
+                //Loop through legs and steps to get encoded polylines of each step
+                if (res.routes != null && res.routes.length > 0) {
+                    DirectionsRoute route = res.routes[0];
+
+                    if (route.legs !=null) {
+                        for(int i=0; i<route.legs.length; i++) {
+                            DirectionsLeg leg = route.legs[i];
+                            if (leg.steps != null) {
+                                for (int j=0; j<leg.steps.length;j++){
+                                    DirectionsStep step = leg.steps[j];
+                                    if (step.steps != null && step.steps.length >0) {
+                                        for (int k=0; k<step.steps.length;k++){
+                                            DirectionsStep step1 = step.steps[k];
+                                            EncodedPolyline points1 = step1.polyline;
+                                            if (points1 != null) {
+                                                //Decode polyline and add points to list of route coordinates
+                                                List<com.google.maps.model.LatLng> coords1 = points1.decodePath();
+                                                for (com.google.maps.model.LatLng coord1 : coords1) {
+                                                    path.add(new LatLng(coord1.lat, coord1.lng));
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        EncodedPolyline points = step.polyline;
+                                        if (points != null) {
+                                            //Decode polyline and add points to list of route coordinates
+                                            List<com.google.maps.model.LatLng> coords = points.decodePath();
+                                            for (com.google.maps.model.LatLng coord : coords) {
+                                                path.add(new LatLng(coord.lat, coord.lng));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch(Exception ex) {
+                Log.e(TAG, ex.getLocalizedMessage());
+            }
+
+            //Draw the polyline
+            if (path.size() > 0) {
+                PolylineOptions opts = new PolylineOptions().addAll(path).color(Color.BLUE).width(5);
+                mMap.addPolyline(opts);
             }
         });
 
@@ -134,6 +239,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapClick(@NonNull LatLng latLng) {
+        destination = String.format("%f,%f", latLng.latitude, latLng.longitude);
         // Creating a marker at the current position
         MarkerOptions markerOptions = new MarkerOptions();
 
@@ -144,4 +250,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
         mMap.addMarker(markerOptions);
     }
+
+
 }
