@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SearchView;
@@ -48,9 +49,10 @@ import java.util.List;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener {
 
-    private final Integer[] busColors = {Color.RED, Color.GREEN, Color.CYAN, Color.DKGRAY, Color.YELLOW, Color.MAGENTA, Color.GRAY};
     private GoogleMap mMap;
     View mapView;
+
+    private final Integer[] busColors = {Color.RED, Color.GREEN, Color.CYAN, Color.DKGRAY, Color.YELLOW, Color.MAGENTA, Color.GRAY};
 
     // variables to set the origin and destination coordinates
     private String origin;
@@ -59,13 +61,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     // creating a variable for search view.
     SearchView searchView;
 
-    @SuppressLint("MissingPermission")
+    @SuppressLint({"MissingPermission", "SetTextI18n"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
         FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        TextView textView = findViewById(R.id.simpleTextView);
+        textView.setText("          Route Instructions:\n"); //set the text for text view
+        textView.setTextColor(Color.BLACK); //set the color for text view
+        textView.setTextSize(20); //set 20sp size of text
 
         // initializing our search view.
         searchView = findViewById(R.id.idSearchView);
@@ -139,42 +146,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // Create a new list to store the transit details
             List<TransitDetails> transitDetailsList = new ArrayList<>();
 
-            // Create a new list to store the walking instructions
-            List<String> walkingInstructions = new ArrayList<>();
-
-            // Create a new list to store the walking distance
-            List<String> walkingDistance = new ArrayList<>();
-
-            // Create a new list to store the walking duration
-            List<String> walkingDuration = new ArrayList<>();
-
-            // Create a new list to store the travel mode
-            List<String> resultedTravelMode = new ArrayList<>();
-
-            // Create a new list to store the arrival stops
-            List<String> arrivalStops = new ArrayList<>();
-
-            // Create a new list to store the arrival time
-            List<String> arrivalTimes = new ArrayList<>();
-
-            // Create a new list to store the departure stops
-            List<String> departureStops = new ArrayList<>();
-
-            // Create a new list to store the departure time
-            List<String> departureTimes = new ArrayList<>();
-
-            // Create a new list to store the number of bus stops
-            List<String> numBusStops = new ArrayList<>();
-
-            // Create a new list to store the bus line
-            List<String> busLines = new ArrayList<>();
-
-            // Create a new list to store the bus headway
-            List<String> busHeadway = new ArrayList<>();
-
-            // Create a new list to store the bus head sign
-            List<String> busHeadSign = new ArrayList<>();
-
             //Execute Directions API request using the Directions API key
             GeoApiContext context = new GeoApiContext.Builder()
                     .apiKey(MAPS_API_KEY)
@@ -207,44 +178,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                 for (int j=0; j<leg.steps.length;j++){
 
                                     DirectionsStep step = leg.steps[j];
+
+                                    // Check if the current step is a walking step and save needed content
+                                    if(step.travelMode.name().equals("WALKING")){
+                                        textView.append("   Walk "+ step.distance.humanReadable+ " in " + step.duration.humanReadable+ "\n");
+
+                                    }
+
+                                    // Check if the current step is a transit bus step and save details
+                                    if (step.transitDetails != null) {
+                                        // Get the transit details for the current step
+                                        TransitDetails busTransitDetails = step.transitDetails;
+
+                                        // Add the transit details to the list
+                                        transitDetailsList.add(busTransitDetails);
+
+                                        textView.append("   Take line " + busTransitDetails.line + " for " + busTransitDetails.numStops + " stops \n");
+
+                                    }
+
                                     if (step.steps != null && step.steps.length >0) {
 
                                         // Iterate through the list of steps
                                         for (int k=0; k<step.steps.length;k++){
 
                                             DirectionsStep step1 = step.steps[k];
-
-                                            resultedTravelMode.add(step1.travelMode.name());
-
-                                            com.google.maps.model.LatLng startLocation = step1.startLocation;
-                                            com.google.maps.model.LatLng endLocation = step1.endLocation;
-
-                                            // Check if the current step is a walking step and save needed content
-                                            if(step1.travelMode.name().equals("WALKING")){
-                                                walkingInstructions.add(step1.htmlInstructions);
-                                                walkingDistance.add(step1.distance.humanReadable);
-                                                walkingDuration.add(step1.duration.humanReadable);
-                                            }
-
-                                            // Check if the current step is a transit bus step and save details
-                                            if (step1.transitDetails != null) {
-                                                // Get the transit details for the current step
-                                                TransitDetails busTransitDetails = step1.transitDetails;
-
-                                                // Add the transit details to the list
-                                                transitDetailsList.add(busTransitDetails);
-
-                                                arrivalStops.add(busTransitDetails.arrivalStop.name);
-                                                arrivalTimes.add(busTransitDetails.arrivalTime.toString());
-
-                                                departureStops.add(busTransitDetails.departureStop.name);
-                                                departureTimes.add(busTransitDetails.departureTime.toString());
-
-                                                busHeadSign.add(busTransitDetails.headsign);
-                                                busHeadway.add((String.valueOf(busTransitDetails.headway)));
-                                                busLines.add(busTransitDetails.line.name);
-                                                numBusStops.add(String.valueOf(busTransitDetails.numStops));
-                                            }
 
                                             EncodedPolyline points1 = step1.polyline;
                                             List<LatLng> path = new ArrayList<>();
@@ -255,6 +213,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                                 for (com.google.maps.model.LatLng coord1 : coords1) {
                                                     path.add(new LatLng(coord1.lat, coord1.lng));
                                                 }
+
+                                                //Draw the polyline
                                                 if(step1.travelMode.name().equals("WALKING")){
                                                     opts.addAll(path).color(Color.BLUE).width(5);
                                                     mMap.addPolyline(opts);
@@ -269,38 +229,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                         }
                                     } else {
 
-                                        resultedTravelMode.add(step.travelMode.name());
-
-                                        com.google.maps.model.LatLng startLocation = step.startLocation;
-                                        com.google.maps.model.LatLng endLocation = step.endLocation;
-
-                                        // Check if the current step is a walking step and save needed content
-                                        if(step.travelMode.name().equals("WALKING")){
-                                            walkingInstructions.add(step.htmlInstructions);
-                                            walkingDistance.add(step.distance.humanReadable);
-                                            walkingDuration.add(step.duration.humanReadable);
-                                        }
-
-                                        // Check if the current step is a transit bus step and save details
-                                        if (step.transitDetails != null) {
-                                            // Get the transit details for the current step
-                                            TransitDetails busTransitDetails = step.transitDetails;
-
-                                            // Add the transit details to the list
-                                            transitDetailsList.add(busTransitDetails);
-
-                                            arrivalStops.add(busTransitDetails.arrivalStop.name);
-                                            arrivalTimes.add(busTransitDetails.arrivalTime.toString());
-
-                                            departureStops.add(busTransitDetails.departureStop.name);
-                                            departureTimes.add(busTransitDetails.departureTime.toString());
-
-                                            busHeadSign.add(busTransitDetails.headsign);
-                                            busHeadway.add((String.valueOf(busTransitDetails.headway)));
-                                            busLines.add(busTransitDetails.line.name);
-                                            numBusStops.add(String.valueOf(busTransitDetails.numStops));
-                                        }
-
                                         EncodedPolyline points = step.polyline;
                                         List<LatLng> path = new ArrayList<>();
                                         PolylineOptions opts = new PolylineOptions();
@@ -310,6 +238,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                             for (com.google.maps.model.LatLng coord : coords) {
                                                 path.add(new LatLng(coord.lat, coord.lng));
                                             }
+
+                                            //Draw the polyline
                                             if(step.travelMode.name().equals("WALKING")){
                                                 opts.addAll(path).color(Color.BLUE).width(5);
                                             }
@@ -329,50 +259,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             } catch(Exception ex) {
                 Log.e(TAG, ex.getLocalizedMessage());
             }
-            //Draw the polyline
-//            if (path.size() > 0) {
-//                PolylineOptions opts = new PolylineOptions().addAll(path).color(Color.BLUE).width(5);
-//                mMap.addPolyline(opts);
-//            }
 
             String resultedDetails = transitDetailsList.toString();
-            Log.d("Transit Details", resultedDetails);
-
-            String resultedDistance = walkingDistance.toString();
-            Log.d("Distance walking Details", resultedDistance);
-
-            String resultedWalking = walkingInstructions.toString();
-            Log.d("Instructions walking Details", resultedWalking);
-
-            String resultedDurationWalking = walkingDuration.toString();
-            Log.d("Duration walking Details", resultedDurationWalking);
-
-            String resultedTravelModes = resultedTravelMode.toString();
-            Log.d("Duration walking Details", resultedTravelModes);
-
-            String resultedArrivalStops = arrivalStops.toString();
-            Log.d("Arrival stops Details", resultedArrivalStops);
-
-            String resultedArrivalTimes = arrivalTimes.toString();
-            Log.d("Arrival times Details", resultedArrivalTimes);
-
-            String resultedDepartureStops = departureStops.toString();
-            Log.d("Departure stops Details", resultedDepartureStops);
-
-            String resultedDepartureTimes = departureTimes.toString();
-            Log.d("Departure times Details", resultedDepartureTimes);
-
-            String resultedNumBusStops = numBusStops.toString();
-            Log.d("Num Bus Stops Details", resultedNumBusStops);
-
-            String resultedBusLines = busLines.toString();
-            Log.d("Bus lines Details", resultedBusLines);
-
-            String resultedBusHeadAway = busHeadway.toString();
-            Log.d("Bus HeadAway Details", resultedBusHeadAway);
-
-            String resultedBusHeadSign = busHeadSign.toString();
-            Log.d("Bus Head Sign Details", resultedBusHeadSign);
+            Log.d("Transit Details: ", resultedDetails);
 
         });
 

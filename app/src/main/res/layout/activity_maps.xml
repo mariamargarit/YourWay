@@ -27,11 +27,22 @@
     <!--get direction button-->
     <Button
         android:id="@+id/btnGetDirections"
-        android:text="Get Directions"
+        android:text="@string/get_directions"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|left"
         android:layout_marginBottom="8dp"
         android:layout_marginLeft="8dp"
         android:layout_marginRight="80dp"/>
+
+    <TextView
+        android:id="@+id/simpleTextView"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:textStyle="bold|italic"
+        android:padding="10dp"
+        android:background="#FBFBFB"
+        android:layout_marginTop="60dp"/>
+
 </FrameLayout>
