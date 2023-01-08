@@ -70,7 +70,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         TextView textView = findViewById(R.id.simpleTextView);
-        textView.setText("          Route Instructions:\n"); //set the text for text view
         textView.setTextColor(Color.BLACK); //set the color for text view
         textView.setTextSize(20); //set 20sp size of text
 
@@ -158,6 +157,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             request.mode(TravelMode.TRANSIT);
 
             try {
+
+                textView.setText("             Route Instructions:\n"); //set the text for text view
+
                 // Execute the API request and get the response
                 DirectionsResult result = request.await();
 
