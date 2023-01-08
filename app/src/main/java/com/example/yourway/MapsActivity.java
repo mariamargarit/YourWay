@@ -195,7 +195,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                         // Add the transit details to the list
                                         transitDetailsList.add(busTransitDetails);
 
-                                        textView.append("   Take line " + busTransitDetails.line + " for " + busTransitDetails.numStops + " stops \n");
+                                        textView.append("   Take line " + busTransitDetails.line + " at " + busTransitDetails.arrivalTime.getHour() + ":" + busTransitDetails.arrivalTime.getMinute() +" for " + busTransitDetails.numStops + " stops \n");
 
                                     }
 
