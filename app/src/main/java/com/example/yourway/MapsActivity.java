@@ -4,7 +4,6 @@ import static android.content.ContentValues.TAG;
 
 import static com.example.yourway.BuildConfig.MAPS_API_KEY;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -16,7 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SearchView;
@@ -33,8 +32,6 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.maps.DirectionsApi;
 import com.google.maps.DirectionsApiRequest;
 import com.google.maps.GeoApiContext;
@@ -43,35 +40,44 @@ import com.google.maps.model.DirectionsResult;
 import com.google.maps.model.DirectionsRoute;
 import com.google.maps.model.DirectionsStep;
 import com.google.maps.model.EncodedPolyline;
+import com.google.maps.model.TransitDetails;
 import com.google.maps.model.TravelMode;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener {
 
     private GoogleMap mMap;
-    private String origin;
-    private String destination;
     View mapView;
 
-    // creating a variable
-    // for search view.
+    private final Integer[] busColors = {Color.RED, Color.GREEN, Color.CYAN, Color.DKGRAY, Color.YELLOW, Color.MAGENTA, Color.GRAY};
+
+    // variables to set the origin and destination coordinates
+    private String origin;
+    private String destination;
+
+    // creating a variable for search view.
     SearchView searchView;
 
-    @SuppressLint("MissingPermission")
+    @SuppressLint({"MissingPermission", "SetTextI18n"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
         FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        TextView textView = findViewById(R.id.simpleTextView);
+        textView.setText("          Route Instructions:\n"); //set the text for text view
+        textView.setTextColor(Color.BLACK); //set the color for text view
+        textView.setTextSize(20); //set 20sp size of text
+
         // initializing our search view.
         searchView = findViewById(R.id.idSearchView);
 
-        Button btnGetDirections = (Button) findViewById(R.id.btnGetDirections);
+        Button btnGetDirections = findViewById(R.id.btnGetDirections);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -79,6 +85,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // adding on query listener for our search view.
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @SuppressLint("DefaultLocale")
             @Override
             public boolean onQueryTextSubmit(String query) {
                 // on below line we are getting the
@@ -104,8 +111,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 assert addressList != null;
                 Address address = addressList.get(0);
 
-                // on below line we are creating a variable for our location
-                // where we will add our locations latitude and longitude.
+                // on below line we are creating a variable for our location where we will add our locations latitude and longitude.
                 LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
                 destination = String.format("%f,%f", address.getLatitude(), address.getLongitude());
 
@@ -135,50 +141,113 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         //get directions functionality
         btnGetDirections.setOnClickListener(v -> {
-            //Define list to get all latlng for the route
-            List<LatLng> path = new ArrayList();
+            int color=0;
 
-            //Execute Directions API request
+            // Create a new list to store the transit details
+            List<TransitDetails> transitDetailsList = new ArrayList<>();
+
+            //Execute Directions API request using the Directions API key
             GeoApiContext context = new GeoApiContext.Builder()
                     .apiKey(MAPS_API_KEY)
                     .build();
-            DirectionsApiRequest req = DirectionsApi.newRequest(context);
-            req.origin(origin);
-            req.destination(destination);
-            //Find direction using only public transportation
-            req.mode(TravelMode.TRANSIT);
-            try {
-                DirectionsResult res = req.await();
+            DirectionsApiRequest request = DirectionsApi.newRequest(context);
+            request.origin(origin);
+            request.destination(destination);
 
-                //Loop through legs and steps to get encoded polylines of each step
-                if (res.routes != null && res.routes.length > 0) {
-                    DirectionsRoute route = res.routes[0];
+            //Find direction using only public transportation
+            request.mode(TravelMode.TRANSIT);
+
+            try {
+                // Execute the API request and get the response
+                DirectionsResult result = request.await();
+
+                //Loop through legs and steps to get encoded poly-lines of each step
+                if (result.routes != null && result.routes.length > 0) {
+
+                    // Get the routes from the response
+                    DirectionsRoute route = result.routes[0];
 
                     if (route.legs !=null) {
+                        // Iterate through the list of routes and  get the list of legs for the current route
                         for(int i=0; i<route.legs.length; i++) {
+
                             DirectionsLeg leg = route.legs[i];
                             if (leg.steps != null) {
+
+                                // Iterate through the list of legs and get the list of steps for the current leg
                                 for (int j=0; j<leg.steps.length;j++){
+
                                     DirectionsStep step = leg.steps[j];
+
+                                    // Check if the current step is a walking step and save needed content
+                                    if(step.travelMode.name().equals("WALKING")){
+                                        textView.append("   Walk "+ step.distance.humanReadable+ " in " + step.duration.humanReadable+ "\n");
+
+                                    }
+
+                                    // Check if the current step is a transit bus step and save details
+                                    if (step.transitDetails != null) {
+                                        // Get the transit details for the current step
+                                        TransitDetails busTransitDetails = step.transitDetails;
+
+                                        // Add the transit details to the list
+                                        transitDetailsList.add(busTransitDetails);
+
+                                        textView.append("   Take line " + busTransitDetails.line + " for " + busTransitDetails.numStops + " stops \n");
+
+                                    }
+
                                     if (step.steps != null && step.steps.length >0) {
+
+                                        // Iterate through the list of steps
                                         for (int k=0; k<step.steps.length;k++){
+
                                             DirectionsStep step1 = step.steps[k];
+
                                             EncodedPolyline points1 = step1.polyline;
+                                            List<LatLng> path = new ArrayList<>();
+                                            PolylineOptions opts = new PolylineOptions();
                                             if (points1 != null) {
                                                 //Decode polyline and add points to list of route coordinates
                                                 List<com.google.maps.model.LatLng> coords1 = points1.decodePath();
                                                 for (com.google.maps.model.LatLng coord1 : coords1) {
                                                     path.add(new LatLng(coord1.lat, coord1.lng));
                                                 }
+
+                                                //Draw the polyline
+                                                if(step1.travelMode.name().equals("WALKING")){
+                                                    opts.addAll(path).color(Color.BLUE).width(5);
+                                                    mMap.addPolyline(opts);
+                                                }
+                                                else{
+                                                    if(color>6) color=0;
+                                                    opts.addAll(path).color(busColors[color]).width(5);
+                                                    color++;
+                                                    mMap.addPolyline(opts);
+                                                }
                                             }
                                         }
                                     } else {
+
                                         EncodedPolyline points = step.polyline;
+                                        List<LatLng> path = new ArrayList<>();
+                                        PolylineOptions opts = new PolylineOptions();
                                         if (points != null) {
                                             //Decode polyline and add points to list of route coordinates
                                             List<com.google.maps.model.LatLng> coords = points.decodePath();
                                             for (com.google.maps.model.LatLng coord : coords) {
                                                 path.add(new LatLng(coord.lat, coord.lng));
+                                            }
+
+                                            //Draw the polyline
+                                            if(step.travelMode.name().equals("WALKING")){
+                                                opts.addAll(path).color(Color.BLUE).width(5);
+                                            }
+                                            else{
+                                                if(color>6) color=0;
+                                                opts.addAll(path).color(busColors[color]).width(5);
+                                                mMap.addPolyline(opts);
+                                                color++;
                                             }
                                         }
                                     }
@@ -191,11 +260,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Log.e(TAG, ex.getLocalizedMessage());
             }
 
-            //Draw the polyline
-            if (path.size() > 0) {
-                PolylineOptions opts = new PolylineOptions().addAll(path).color(Color.BLUE).width(5);
-                mMap.addPolyline(opts);
-            }
+            String resultedDetails = transitDetailsList.toString();
+            Log.d("Transit Details: ", resultedDetails);
+
         });
 
         // at last we calling our map fragment to update.
@@ -218,11 +285,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         if (mapView != null &&
                 mapView.findViewById(Integer.parseInt("1")) != null) {
+
             // Get the button view
             View locationButton = ((View) mapView.findViewById(Integer.parseInt("1")).getParent()).findViewById(Integer.parseInt("2"));
+
             // and next place it, on bottom right (as Google Maps app)
             RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams)
                     locationButton.getLayoutParams();
+
             // position on right bottom
             layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0);
             layoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
@@ -237,9 +307,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    @SuppressLint("DefaultLocale")
     @Override
     public void onMapClick(@NonNull LatLng latLng) {
         destination = String.format("%f,%f", latLng.latitude, latLng.longitude);
+
         // Creating a marker at the current position
         MarkerOptions markerOptions = new MarkerOptions();
 
@@ -250,6 +322,5 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
         mMap.addMarker(markerOptions);
     }
-
 
 }

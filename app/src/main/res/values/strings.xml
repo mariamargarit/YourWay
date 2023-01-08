@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">YourWay</string>
     <string name="title_activity_maps">MapsActivity</string>
+    <string name="get_directions">Get Directions</string>
 </resources>
