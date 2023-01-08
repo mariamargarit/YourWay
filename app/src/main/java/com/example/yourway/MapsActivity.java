@@ -48,6 +48,7 @@ import java.util.List;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener {
 
+    private final Integer[] busColors = {Color.RED, Color.GREEN, Color.CYAN, Color.DKGRAY, Color.YELLOW, Color.MAGENTA, Color.GRAY};
     private GoogleMap mMap;
     View mapView;
 
@@ -133,12 +134,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         //get directions functionality
         btnGetDirections.setOnClickListener(v -> {
+            int color=0;
 
             // Create a new list to store the transit details
             List<TransitDetails> transitDetailsList = new ArrayList<>();
-
-            //Define list to get all lat-lng for the route
-            List<LatLng> path = new ArrayList<>();
 
             // Create a new list to store the walking instructions
             List<String> walkingInstructions = new ArrayList<>();
@@ -221,7 +220,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                             com.google.maps.model.LatLng endLocation = step1.endLocation;
 
                                             // Check if the current step is a walking step and save needed content
-                                            if(step1.travelMode.name().equals("walking")){
+                                            if(step1.travelMode.name().equals("WALKING")){
                                                 walkingInstructions.add(step1.htmlInstructions);
                                                 walkingDistance.add(step1.distance.humanReadable);
                                                 walkingDuration.add(step1.duration.humanReadable);
@@ -248,11 +247,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                             }
 
                                             EncodedPolyline points1 = step1.polyline;
+                                            List<LatLng> path = new ArrayList<>();
+                                            PolylineOptions opts = new PolylineOptions();
                                             if (points1 != null) {
                                                 //Decode polyline and add points to list of route coordinates
                                                 List<com.google.maps.model.LatLng> coords1 = points1.decodePath();
                                                 for (com.google.maps.model.LatLng coord1 : coords1) {
                                                     path.add(new LatLng(coord1.lat, coord1.lng));
+                                                }
+                                                if(step1.travelMode.name().equals("WALKING")){
+                                                    opts.addAll(path).color(Color.BLUE).width(5);
+                                                    mMap.addPolyline(opts);
+                                                }
+                                                else{
+                                                    if(color>6) color=0;
+                                                    opts.addAll(path).color(busColors[color]).width(5);
+                                                    color++;
+                                                    mMap.addPolyline(opts);
                                                 }
                                             }
                                         }
@@ -264,7 +275,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                         com.google.maps.model.LatLng endLocation = step.endLocation;
 
                                         // Check if the current step is a walking step and save needed content
-                                        if(step.travelMode.name().equals("walking")){
+                                        if(step.travelMode.name().equals("WALKING")){
                                             walkingInstructions.add(step.htmlInstructions);
                                             walkingDistance.add(step.distance.humanReadable);
                                             walkingDuration.add(step.duration.humanReadable);
@@ -291,11 +302,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                         }
 
                                         EncodedPolyline points = step.polyline;
+                                        List<LatLng> path = new ArrayList<>();
+                                        PolylineOptions opts = new PolylineOptions();
                                         if (points != null) {
                                             //Decode polyline and add points to list of route coordinates
                                             List<com.google.maps.model.LatLng> coords = points.decodePath();
                                             for (com.google.maps.model.LatLng coord : coords) {
                                                 path.add(new LatLng(coord.lat, coord.lng));
+                                            }
+                                            if(step.travelMode.name().equals("WALKING")){
+                                                opts.addAll(path).color(Color.BLUE).width(5);
+                                            }
+                                            else{
+                                                if(color>6) color=0;
+                                                opts.addAll(path).color(busColors[color]).width(5);
+                                                mMap.addPolyline(opts);
+                                                color++;
                                             }
                                         }
                                     }
@@ -308,10 +330,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Log.e(TAG, ex.getLocalizedMessage());
             }
             //Draw the polyline
-            if (path.size() > 0) {
-                PolylineOptions opts = new PolylineOptions().addAll(path).color(Color.BLUE).width(5);
-                mMap.addPolyline(opts);
-            }
+//            if (path.size() > 0) {
+//                PolylineOptions opts = new PolylineOptions().addAll(path).color(Color.BLUE).width(5);
+//                mMap.addPolyline(opts);
+//            }
 
             String resultedDetails = transitDetailsList.toString();
             Log.d("Transit Details", resultedDetails);
