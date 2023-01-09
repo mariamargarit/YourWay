@@ -4,14 +4,12 @@ import static android.content.ContentValues.TAG;
 import static com.example.yourway.BuildConfig.MAPS_API_KEY;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.annotation.SuppressLint;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Address;
@@ -71,56 +69,54 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         TextView textView = findViewById(R.id.simpleTextView);
-        textView.setTextColor(Color.BLACK); //set the color for text view
-        textView.setTextSize(20); //set 20sp size of text
+        //set the color for text view
+        textView.setTextColor(Color.BLACK);
+        //set 20sp size of text
+        textView.setTextSize(20);
 
         // initializing our search view.
         searchView = findViewById(R.id.idSearchView);
 
         Button btnGetDirections = findViewById(R.id.btnGetDirections);
 
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
 
-        // adding on query listener for our search view.
+        // adding on query listener for our search view
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @SuppressLint("DefaultLocale")
             @Override
             public boolean onQueryTextSubmit(String query) {
-                // on below line we are getting the
-                // location name from search view.
+                // on below line we are getting the location name from search view
                 String location = searchView.getQuery().toString();
 
-                // below line is to create a list of address
-                // where we will store the list of all address.
+                // below line is to create a list of address where we will store the list of all address
                 List<Address> addressList = null;
 
-                // checking if the entered location is null or not.
-                // on below line we are creating and initializing a geo coder.
+                // checking if the entered location is null or not
+                // on below line we are creating and initializing a geo coder
                 Geocoder geocoder = new Geocoder(MainActivity.this);
                 try {
-                    // on below line we are getting location from the
-                    // location name and adding that location to address list.
+                    // on below line we are getting location from the location name and adding that location to address list
                     addressList = geocoder.getFromLocationName(location, 1);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                // on below line we are getting the location
-                // from our list a first position.
+                // on below line we are getting the location from our list a first position
                 assert addressList != null;
                 Address address = addressList.get(0);
 
-                // on below line we are creating a variable for our location where we will add our locations latitude and longitude.
+                // on below line we are creating a variable for our location where we will add our locations latitude and longitude
                 LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
                 destination = String.format("%f,%f", address.getLatitude(), address.getLongitude());
 
                 mMap.clear();
 
-                // on below line we are adding marker to that position.
+                // on below line we are adding marker to that position
                 mMap.addMarker(new MarkerOptions().position(latLng).title(location));
 
-                // below line is to animate camera to that position.
+                // below line is to animate camera to that position
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
                 return false;
             }
@@ -133,7 +129,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         fusedLocationClient.getLastLocation()
                 .addOnSuccessListener(this, location -> {
-                    // Got last known location. In some rare situations this can be null.
+                    // Got last known location. In some rare situations this can be null
                     if (location != null) {
                         origin = Location.convert(location.getLatitude(), Location.FORMAT_DEGREES) + "," + Location.convert(location.getLongitude(), Location.FORMAT_DEGREES);
                     }
@@ -158,7 +154,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             request.mode(TravelMode.TRANSIT);
 
             try {
-                textView.setText("             Route Instructions:\n"); //set the text for text view
+                //set the text for text view
+                textView.setText("             Route Instructions:\n");
 
                 // Execute the API request and get the response
                 DirectionsResult result = request.await();
@@ -268,7 +265,8 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         });
 
-        // at last we calling our map fragment to update.
+
+        // at last we calling our map fragment to update
         assert mapFragment != null;
         mapView = mapFragment.getView();
         mapFragment.getMapAsync(this);
