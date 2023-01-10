@@ -16,7 +16,10 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.text.method.ScrollingMovementMethod;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -53,6 +56,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     View mapView;
 
     private final Integer[] busColors = {Color.RED, Color.GREEN, Color.CYAN, Color.DKGRAY, Color.YELLOW, Color.MAGENTA, Color.GRAY};
+    private final Integer[] instructionColors = {Color.RED, Color.GREEN, Color.CYAN, Color.DKGRAY, Color.YELLOW, Color.MAGENTA, Color.GRAY};
 
     // variables to set the origin and destination coordinates
     private String origin;
@@ -142,6 +146,13 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         // get directions functionality
         btnGetDirections.setOnClickListener(v -> {
             int color=0;
+            int instruction=0;
+
+            SpannableStringBuilder builder = new SpannableStringBuilder();
+            String introduction = "             Route Instructions:\n";
+            SpannableString introductionSpannable= new SpannableString(introduction);
+            introductionSpannable.setSpan(new ForegroundColorSpan(Color.BLACK), 0, introduction.length(), 0);
+            builder.append(introductionSpannable);
 
             // create a new list to store the transit details
             List<TransitDetails> transitDetailsList = new ArrayList<>();
@@ -158,8 +169,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             request.mode(TravelMode.TRANSIT);
 
             try {
-                // set the text for text view
-                textView.setText("             Route Instructions:\n");
 
                 // execute the API request and get the response
                 DirectionsResult result = request.await();
@@ -184,7 +193,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
                                     // check if the current step is a walking step and save needed content
                                     if(step.travelMode.name().equals("WALKING")){
-                                        textView.append("   Walk "+ step.distance.humanReadable+ " in " + step.duration.humanReadable+ "\n");
+                                        String walk = "   Walk "+ step.distance.humanReadable+ " in " + step.duration.humanReadable+ "\n";
+                                        SpannableString walkSpannable= new SpannableString(walk);
+                                        walkSpannable.setSpan(new ForegroundColorSpan(Color.BLUE), 0, walk.length(), 0);
+                                        builder.append(walkSpannable);
 
                                     }
 
@@ -195,9 +207,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
                                         // add the transit details to the list
                                         transitDetailsList.add(busTransitDetails);
-
-                                        textView.append("   Take line " + busTransitDetails.line + " at " + busTransitDetails.arrivalTime.getHour() +
-                                                ":" + busTransitDetails.arrivalTime.getMinute() +" for " + busTransitDetails.numStops + " stops \n");
+                                        
+                                        if(instruction>6) instruction=0;
+                                        String bus_line = "   Take line " + busTransitDetails.line + " at " + busTransitDetails.arrivalTime.getHour() +
+                                                ":" + busTransitDetails.arrivalTime.getMinute() +" for " + busTransitDetails.numStops + " stops \n";
+                                        SpannableString bus_line_Spannable = new SpannableString(bus_line);
+                                        bus_line_Spannable.setSpan(new ForegroundColorSpan(instructionColors[instruction]), 0, bus_line.length(), 0);
+                                        builder.append(bus_line_Spannable);
+                                        instruction++;
 
                                     }
 
@@ -266,6 +283,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
             String resultedDetails = transitDetailsList.toString();
             Log.d("Transit Details: ", resultedDetails);
+
+            //set the text for textview
+            textView.setText(builder, TextView.BufferType.SPANNABLE);
 
         });
 
