@@ -39,6 +39,8 @@
         android:id="@+id/simpleTextView"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
+        android:maxHeight="200dp"
+        android:scrollbars="vertical"
         android:textSize="20sp"
         android:textStyle="bold|italic"
         android:padding="10dp"

@@ -16,6 +16,7 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -73,6 +74,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         textView.setTextColor(Color.BLACK);
         //set 20sp size of text
         textView.setTextSize(20);
+
+        // added scroll
+        textView.setMovementMethod(new ScrollingMovementMethod());
 
         // initializing our search view
         searchView = findViewById(R.id.idSearchView);
